@@ -1,0 +1,101 @@
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #3a2010; 
+    box-sizing: border-box;
+    border: 20px solid #3a2010; 
+    overflow: hidden;
+  }
+  
+  img {
+    max-width: 100%;
+    max-height: 90%;
+    object-fit: contain;       
+    border-radius: 20px;      
+    box-shadow: none;
+  }
+
+  
+ 
+  .floor-creature {
+    position: absolute;
+    bottom: 3%;            
+    left: 75%;         
+    transform: translateX(-50%); 
+    max-height: 500px;     
+    width: auto;
+ 
+
+  
+    /* Applies the bounce animation */
+    animation: floorBounce 2s infinite ease-in-out;
+    /* Ensures the transform origin is at the bottom so it bounces off the floor */
+    transform-origin: bottom center; 
+  }
+
+  .floor-creature.hippo-position {
+    left: 25%;
+    max-height: 350px;
+    bottom: 10%; 
+
+  }
+  .floor-creature.pen-position {
+    left: 20%;
+    max-height: 250px;
+    bottom: 50%; 
+
+  }
+  
+  .floor-creature.monkey-position {
+    right: 20%;
+    max-height: 300px;
+    bottom:53%; 
+
+  }
+  
+  /* The bounce animation timeline */
+  @keyframes floorBounce {
+    0%, 100% {
+      transform: translateX(-50%) translateY(0) scaleY(1);
+    }
+    50% {
+      /* Moves the image up 30px at the peak of the jump */
+      transform: translateX(-50%) translateY(-30px) scaleY(1.05); 
+    }
+    95% {
+      /* Slightly squishes the image right before landing for realism */
+      transform: translateX(-50%) translateY(0) scaleY(0.95); 
+    }
+  }
+
+  .start-btn {
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: none; 
+    cursor: pointer;
+    z-index: 20;
+    border: none;
+    transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+    white-space: nowrap;
+    width: 200px;
+  }
+  
+  .start-btn:hover { 
+    color: #000; 
+  }
+  
+  .start-btn:active {
+    transform: translateX(-50%) translateY(5px);
+    
+  }
+  
+  
+  
+  

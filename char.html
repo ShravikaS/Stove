@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Selection</title>
+    <link rel="stylesheet" href="style1.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+
+</head>
+<body>
+
+  <div class="screen-panel">
+
+    <h1 class="title">Choose Your Own Character!</h1>
+
+    <div class="game-container">
+
+        <div class="grid-container">
+            <div class="grid-item" onclick="selectCharacter('Mammoth', 'woolly.png')"><img src="woolly.png" alt="Mammoth"></div>
+            <div class="grid-item" onclick="selectCharacter('Clownfish', 'clown.png')"><img src="clown.png" alt="Clownfish"></div>
+            <div class="grid-item" onclick="selectCharacter('Polar Bear', 'polarbear.png')"><img src="polarbear.png" alt="Polar Bear"></div>
+            
+            <div class="grid-item" onclick="selectCharacter('Bunny', 'bunny.png')"><img src="bunny.png" alt="Rabbit"></div>
+            <div class="grid-item" onclick="selectCharacter('Turtle', 'turtle.png')"><img src="turtle.png" alt="Turtle"></div>
+            <div class="grid-item" onclick="selectCharacter('Marmot', 'marmot.png')"><img src="marmot.png" alt="Marmot"></div>
+            
+            <div class="grid-item" onclick="selectCharacter('Hippo', 'hippo.png')"><img src="hippo.png" alt="Hippo"></div>
+            <div class="grid-item" onclick="selectCharacter('Snail', 'snail.png')"><img src="snail.png" alt="Snail"></div>
+            <div class="grid-item" onclick="selectCharacter('Snake', 'snake.png')"><img src="snake.png" alt="Snake"></div>
+        </div>
+
+        <div class="pedestal-container">
+            <div class="selected-character-wrapper">
+                <img id="chosen-character" src="" alt="" style="display: none;">
+            </div>
+            <div class="pedestal">
+                <div class="pedestal-top"></div>
+                <div class="pedestal-bottom"></div>
+            </div>
+            <h2 id="character-name">Select an Animal</h2>
+        </div>
+
+    </div>
+    <button class="continue-btn" onclick="goToPark()">Continue</button>
+
+  </div>
+
+    <script src="script.js"></script>
+
+    
+</body>
+
+
+</html>
+
