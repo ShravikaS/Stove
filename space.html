@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space</title>
+    <link rel="stylesheet" href="style3.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="stars"></canvas>
+        <canvas id="game"></canvas>
+        <div id="score-display">Bananas: 0 / 10</div>
+        <div id="end-screen">
+            <h1>Quest Complete! </h1>
+            <p>You collected 10 bananas!</p>
+            <button onclick="window.location.href='park2.html'">End Quest</button>
+        </div>
+    </div>
+
+    <script>
+        // ── Stars ──
+        const starCanvas = document.getElementById('stars');
+        const sCtx = starCanvas.getContext('2d');
+        starCanvas.width = starCanvas.offsetWidth;
+        starCanvas.height = starCanvas.offsetHeight;
+
+        const stars = [];
+        for (let i = 0; i < 300; i++) {
+            stars.push({
+                x: Math.random() * starCanvas.width,
+                y: Math.random() * starCanvas.height,
+                radius: Math.random() * 1.8,
+                opacity: Math.random(),
+                twinkleSpeed: Math.random() * 0.02 + 0.005
+            });
+        }
+
+        function drawStars() {
+            sCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+            stars.forEach(star => {
+                star.opacity += star.twinkleSpeed;
+                if (star.opacity > 1 || star.opacity < 0) star.twinkleSpeed *= -1;
+                sCtx.beginPath();
+                sCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                sCtx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                sCtx.fill();
+            });
+            requestAnimationFrame(drawStars);
+        }
+        drawStars();
+
+        // ── Game ──
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        let score = 0;
+        let gameOver = false;
+        let keys = {};
+
+        // Load images
+        const rocketImg = new Image(); rocketImg.src = 'spaceship.png';
+        const meteorImg = new Image(); meteorImg.src = 'meter.png';
+        const bananaImg = new Image(); bananaImg.src = 'banana.png';
+
+        // Rocket
+        const rocket = {
+            x: canvas.width / 2,
+            y: canvas.height - 120,
+            width: 70,
+            height: 90,
+            speed: 6,
+            draw() {
+                ctx.drawImage(rocketImg, this.x - this.width / 2, this.y - this.height, this.width, this.height);
+            }
+        };
+
+        let objects = [];
+        let spawnTimer = 0;
+
+        function spawnObject() {
+            const isBanana = Math.random() < 0.4;
+            objects.push({
+                x: Math.random() * (canvas.width - 60) + 30,
+                y: -50,
+                speed: Math.random() * 2.5 + 2,
+                type: isBanana ? 'banana' : 'meteor',
+                img: isBanana ? bananaImg : meteorImg,
+                width: isBanana ? 45 : 55,
+                height: isBanana ? 45 : 55
+            });
+        }
+
+        function checkCollision(obj) {
+            const dx = Math.abs(obj.x - rocket.x);
+            const dy = Math.abs(obj.y - rocket.y);
+            return dx < (obj.width / 2 + rocket.width / 2 - 10) &&
+                   dy < (obj.height / 2 + rocket.height / 2 - 10);
+        }
+
+        document.addEventListener('keydown', e => keys[e.key] = true);
+        document.addEventListener('keyup', e => keys[e.key] = false);
+
+        function gameLoop() {
+            if (gameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (keys['ArrowLeft'] && rocket.x > rocket.width / 2) rocket.x -= rocket.speed;
+            if (keys['ArrowRight'] && rocket.x < canvas.width - rocket.width / 2) rocket.x += rocket.speed;
+
+            spawnTimer++;
+            if (spawnTimer % 60 === 0) spawnObject();
+
+            objects.forEach((obj, i) => {
+                obj.y += obj.speed;
+                ctx.drawImage(obj.img, obj.x - obj.width / 2, obj.y - obj.height / 2, obj.width, obj.height);
+
+                if (checkCollision(obj)) {
+                    objects.splice(i, 1);
+                    if (obj.type === 'banana') {
+                        score++;
+                        document.getElementById('score-display').textContent = ` Bananas: ${score} / 10`;
+                        if (score >= 10) {
+                            gameOver = true;
+                            document.getElementById('end-screen').style.display = 'flex';
+                        }
+                    } else {
+                        document.getElementById('game-wrapper').style.outline = '6px solid red';
+                        setTimeout(() => document.getElementById('game-wrapper').style.outline = '', 200);
+                    }
+                }
+
+                if (obj.y > canvas.height + 50) objects.splice(i, 1);
+            });
+
+            rocket.draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Wait for all images to load before starting
+        let loaded = 0;
+        [rocketImg, meteorImg, bananaImg].forEach(img => {
+            img.onload = () => { loaded++; if (loaded === 3) gameLoop(); };
+        });
+    </script>
+</body>
+</html>

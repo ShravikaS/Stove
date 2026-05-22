@@ -5,24 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Park</title>
     <link rel="stylesheet" href="style2.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
 </head>
 <body>
     <img class="park-bg" src="park.png" alt="park">
     <img id="player-animal" src="" alt="your animal">
 
+    <div id="tardii-container">
+        <div id="speech-bubble">
+            <p>Hey there! I am here to give you your first quest. Make sure to bring back 10 bananas!</p>
+            <button onclick="window.location.href='space.html'">Start</button>
+        </div>
+        <img id="tardii" src="tardii.png" alt="tardigrade">
+    </div>
+
     <script>
         const animal = localStorage.getItem('selectedAnimal');
-        const name = localStorage.getItem('selectedAnimalName');
-        if (animal) {
-            const img = document.getElementById('player-animal');
-            img.src = animal;
-            img.alt = name;
-        }
+const name = localStorage.getItem('selectedAnimalName');
+const playerImg = document.getElementById('player-animal');
 
+if (animal) {
+    playerImg.src = animal;
+    playerImg.alt = name;
+}
 
-        const img = document.getElementById('player-animal');
 let x = 62;
 let y = 8;
+
+function checkProximity() {
+    const playerRect = playerImg.getBoundingClientRect();
+    const tardiiRect = document.getElementById('tardii').getBoundingClientRect();
+
+    const playerCenterX = playerRect.left + playerRect.width / 2;
+    const playerCenterY = playerRect.top + playerRect.height / 2;
+    const tardiiCenterX = tardiiRect.left + tardiiRect.width / 2;
+    const tardiiCenterY = tardiiRect.top + tardiiRect.height / 2;
+
+    const distance = Math.hypot(playerCenterX - tardiiCenterX, playerCenterY - tardiiCenterY);
+
+    const bubble = document.getElementById('speech-bubble');
+    if (distance < 200) {
+        bubble.style.display = 'block';
+    } else {
+        bubble.style.display = 'none';
+    }
+}
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft')  x -= 1;
@@ -30,8 +57,10 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowUp')    y += 1;
     if (e.key === 'ArrowDown')  y -= 1;
 
-    img.style.left = x + '%';
-    img.style.bottom = y + '%';
+    playerImg.style.left = x + '%';
+    playerImg.style.bottom = y + '%';
+
+    checkProximity();
 });
     </script>
 </body>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park</title>
+    <link rel="stylesheet" href="style2.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+</head>
+<body>
+    <img class="park-bg" src="park.png" alt="park">
+    <img id="player-animal" src="" alt="your animal">
+
+    <!-- Tardigrade with first quest bubble -->
+    <div id="tardii-container">
+        <div id="speech-bubble">
+            <p>Oops! You already completed this quest!</p>
+            
+        </div>
+        <img id="tardii" src="tardii.png" alt="tardigrade">
+    </div>
+
+    <!-- Monkey with second quest bubble -->
+    <div id="monkey-container">
+        <div id="monkey-bubble">
+            <p>YUM! Thanks for those bananas. Here is your second quest, make sure to bring back 10 fish!</p>
+            <button onclick="window.location.href='river.html'">Start</button>
+        </div>
+        <img id="monkey" src="monkey.png" alt="monkey">
+    </div>
+
+   
+
+    <script>
+        const animal = localStorage.getItem('selectedAnimal');
+        const name = localStorage.getItem('selectedAnimalName');
+        const playerImg = document.getElementById('player-animal');
+
+        if (animal) {
+            playerImg.src = animal;
+            playerImg.alt = name;
+        }
+
+        let x = 62;
+        let y = 8;
+
+        function checkProximity() {
+            const playerRect = playerImg.getBoundingClientRect();
+            const pCX = playerRect.left + playerRect.width / 2;
+            const pCY = playerRect.top + playerRect.height / 2;
+
+            // Tardii bubble
+            const tardiiRect = document.getElementById('tardii').getBoundingClientRect();
+            const tCX = tardiiRect.left + tardiiRect.width / 2;
+            const tCY = tardiiRect.top + tardiiRect.height / 2;
+            const tardiiDist = Math.hypot(pCX - tCX, pCY - tCY);
+            document.getElementById('speech-bubble').style.display = tardiiDist < 200 ? 'block' : 'none';
+
+            // Monkey bubble
+            const monkeyRect = document.getElementById('monkey').getBoundingClientRect();
+            const mCX = monkeyRect.left + monkeyRect.width / 2;
+            const mCY = monkeyRect.top + monkeyRect.height / 2;
+            const monkeyDist = Math.hypot(pCX - mCX, pCY - mCY);
+            document.getElementById('monkey-bubble').style.display = monkeyDist < 200 ? 'block' : 'none';
+
+            // Turtle collision — push player back
+            const turtleRect = document.getElementById('turtle').getBoundingClientRect();
+            const tuCX = turtleRect.left + turtleRect.width / 2;
+            const tuCY = turtleRect.top + turtleRect.height / 2;
+            const turtleDist = Math.hypot(pCX - tuCX, pCY - tuCY);
+
+            if (turtleDist < 100) {
+                // bounce back
+                if (pCX < tuCX) x -= 3; else x += 3;
+                if (pCY < tuCY) y += 3; else y -= 3;
+                playerImg.style.left = x + '%';
+                playerImg.style.bottom = y + '%';
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft')  x -= 1;
+            if (e.key === 'ArrowRight') x += 1;
+            if (e.key === 'ArrowUp')    y += 1;
+            if (e.key === 'ArrowDown')  y -= 1;
+
+            playerImg.style.left = x + '%';
+            playerImg.style.bottom = y + '%';
+
+            checkProximity();
+        });
+    </script>
+</body>
+</html>
