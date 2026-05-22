@@ -1,0 +1,39 @@
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #3a2010;
+    box-sizing: border-box;
+    border: 20px solid #3a2010;
+    overflow: hidden;
+    position: relative;
+}
+
+.park-bg {
+    width: 95%;
+    max-width: 1300px;
+    height: calc(100vh - 60px);
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow: none;
+}
+
+#player-animal {
+    position: absolute;
+    bottom: 10%;
+    left: 10%;
+    height: 150px;
+    width: auto;
+}
+
+#player-animal {
+    position: absolute;
+    bottom: 8%;
+    left: 52%;
+    height: 150px;
+    width: auto;
+}

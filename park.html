@@ -1,3 +1,38 @@
-<link rel="stylesheet" href="style.css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park</title>
+    <link rel="stylesheet" href="style2.css">
+</head>
+<body>
+    <img class="park-bg" src="park.png" alt="park">
+    <img id="player-animal" src="" alt="your animal">
 
-<img src="park.png" alt="Description of the image">
+    <script>
+        const animal = localStorage.getItem('selectedAnimal');
+        const name = localStorage.getItem('selectedAnimalName');
+        if (animal) {
+            const img = document.getElementById('player-animal');
+            img.src = animal;
+            img.alt = name;
+        }
+
+
+        const img = document.getElementById('player-animal');
+let x = 62;
+let y = 8;
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft')  x -= 1;
+    if (e.key === 'ArrowRight') x += 1;
+    if (e.key === 'ArrowUp')    y += 1;
+    if (e.key === 'ArrowDown')  y -= 1;
+
+    img.style.left = x + '%';
+    img.style.bottom = y + '%';
+});
+    </script>
+</body>
+</html>
