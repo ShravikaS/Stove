@@ -438,9 +438,9 @@
             const rect = wrapper.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
 
-            mazeCanvas.width = rect.width * dpr;
+            mazeCanvas.width = rect.width *dpr;
             mazeCanvas.height = rect.height * dpr;
-            entityCanvas.width = rect.width * dpr;
+            entityCanvas.width = rect.width *dpr;
             entityCanvas.height = rect.height * dpr;
 
             mazeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -518,8 +518,8 @@
                 x: cellCenterX(col),
                 y: cellCenterY(row),
                 moving: false,
-                startX: 0,
-                startY: 0,
+                startX:0,
+                startY:0,
                 endX: 0,
                 endY: 0,
                 progress: 0,
@@ -601,11 +601,11 @@
         }
 
         function tryMove(direction) {
-            if (!running || unlocked || player.moving) return;
+            if (!running || unlocked ||player.moving) return;
             if (!canMove(player.row, player.col, direction)) return;
 
-            const nextRow = direction === 'up' ? player.row - 1 : direction === 'down' ? player.row + 1 : player.row;
-            const nextCol = direction === 'left' ? player.col - 1 : direction === 'right' ? player.col + 1 : player.col;
+            const nextRow =direction==='up' ? player.row-1 : direction === 'down' ? player.row + 1 : player.row;
+            const nextCol =direction=== 'left' ? player.col - 1 : direction ==='right'? player.col + 1 : player.col;
 
             player.moving = true;
             player.progress = 0;
@@ -623,7 +623,7 @@
             const height = wrapper.clientHeight;
             mazeCtx.clearRect(0, 0, width, height);
 
-            const glow = mazeCtx.createRadialGradient(width * 0.5, height * 0.32, 18, width * 0.5, height * 0.5, Math.max(width, height) * 0.9);
+            const glow = mazeCtx.createRadialGradient(width * 0.5,height *0.32, 18, width * 0.5, height* 0.5, Math.max(width, height)*0.9);
             glow.addColorStop(0, 'rgba(255,255,255,0.07)');
             glow.addColorStop(1, 'rgba(255,255,255,0)');
             mazeCtx.fillStyle = glow;

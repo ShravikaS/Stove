@@ -28,6 +28,13 @@
         </div>
         <img id="monkey" src="monkey.png" alt="monkey">
     </div>
+    <div id="penguin-container">
+        <div id="penguin-bubble">
+            <p>YUM! Thanks for those fish. Here is your third quest!</p>
+            <button onclick="window.location.href='maze.html'">Start</button>
+        </div>
+        <img id="penguin" src="pen.png" alt="penguin">
+    </div>
 
    
 
@@ -63,11 +70,25 @@
             const monkeyDist = Math.hypot(pCX - mCX, pCY - mCY);
             document.getElementById('monkey-bubble').style.display = monkeyDist < 200 ? 'block' : 'none';
 
-            // Turtle collision — push player back
-            const turtleRect = document.getElementById('turtle').getBoundingClientRect();
-            const tuCX = turtleRect.left + turtleRect.width / 2;
-            const tuCY = turtleRect.top + turtleRect.height / 2;
-            const turtleDist = Math.hypot(pCX - tuCX, pCY - tuCY);
+            // Turtle collision — push player back only if a turtle exists on this page
+            const turtle = document.getElementById('turtle');
+            let turtleDist = Infinity;
+            let tuCX = 0;
+            let tuCY = 0;
+
+            if (turtle) {
+                const turtleRect = turtle.getBoundingClientRect();
+                tuCX = turtleRect.left + turtleRect.width / 2;
+                tuCY = turtleRect.top + turtleRect.height / 2;
+                turtleDist = Math.hypot(pCX - tuCX, pCY - tuCY);
+            }
+
+            const penguinRect = document.getElementById('penguin').getBoundingClientRect();
+            const aCX = penguinRect.left + penguinRect.width / 2;
+            const aCY = penguinRect.top + penguinRect.height / 2;
+            const penguinDist = Math.hypot(pCX - aCX, pCY - aCY);
+            document.getElementById('penguin-bubble').style.display = penguinDist < 200 ? 'block' : 'none';
+
 
             if (turtleDist < 100) {
                 // bounce back
@@ -79,7 +100,7 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key ==='ArrowLeft')  x -= 1;
+            if (e.key === 'ArrowLeft')  x -= 1;
             if (e.key === 'ArrowRight') x += 1;
             if (e.key === 'ArrowUp')    y += 1;
             if (e.key === 'ArrowDown')  y -= 1;
