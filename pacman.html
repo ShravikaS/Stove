@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jungle Fish Chase</title>
+    <style>
+        :root {
+            --frame: #3a2010;
+            --jungle-top: #102916;
+            --jungle-mid: #173b20;
+            --jungle-bottom: #214b28;
+            --hedge-dark: #15311b;
+            --hedge-mid: #2d6a35;
+            --hedge-light: #71a85c;
+            --text: #f7f3d8;
+            --panel: rgba(18, 34, 20, 0.72);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--frame);
+            border: 20px solid var(--frame);
+            box-sizing: border-box;
+            overflow: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 95%;
+            max-width: 1300px;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 18% 16%, rgba(126, 190, 90, 0.15), transparent 22%),
+                radial-gradient(circle at 82% 20%, rgba(51, 122, 62, 0.18), transparent 22%),
+                linear-gradient(180deg, var(--jungle-top), var(--jungle-mid) 52%, var(--jungle-bottom));
+            box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.06);
+        }
+
+        #game-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, rgba(255,255,255,0.03) 0 20%, rgba(255,255,255,0) 20% 40%, rgba(255,255,255,0.04) 40% 60%, rgba(255,255,255,0) 60% 80%, rgba(255,255,255,0.03) 80% 100%),
+                radial-gradient(circle at 16% 74%, rgba(110, 182, 82, 0.18), transparent 18%),
+                radial-gradient(circle at 86% 72%, rgba(36, 85, 38, 0.20), transparent 20%);
+            background-size: 180% 180%, 220% 220%, 240% 240%;
+            animation: forestShift 12s linear infinite;
+            opacity: 0.9;
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #mazeCanvas { z-index: 1; }
+        #entityCanvas { z-index: 2; }
+
+        #hud {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            color: var(--text);
+            font-weight: 800;
+        }
+
+        .hud-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: 4px solid #c8a85b;
+            background: linear-gradient(180deg, #281d11, #4b341d 58%, #2f2112);
+            color: #fff5c7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 0 #110b06, 0 10px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        .hud-box img {
+            width: 24px;
+            height: 24px;
+        }
+
+        #instructions {
+            position: absolute;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: var(--text);
+            background: var(--panel);
+            border: 3px solid rgba(255, 245, 207, 0.24);
+            border-radius: 0;
+            padding: 8px 14px;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        #start-screen,
+        #end-screen {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
+            color: var(--text);
+        }
+
+        #start-screen {
+            background:
+                radial-gradient(circle at 50% 20%, rgba(120, 183, 82, 0.20), transparent 26%),
+                linear-gradient(180deg, rgba(13, 28, 15, 0.88), rgba(22, 46, 24, 0.86));
+        }
+
+        #end-screen {
+            display: none;
+            background:
+                radial-gradient(circle at 50% 18%, rgba(210, 255, 180, 0.26), transparent 24%),
+                linear-gradient(180deg, rgba(11, 29, 13, 0.90), rgba(40, 78, 33, 0.94) 55%, rgba(12, 20, 12, 0.96));
+        }
+
+        #end-screen.unlocked {
+            background:
+                radial-gradient(circle at 50% 16%, rgba(255, 247, 177, 0.30), transparent 22%),
+                repeating-linear-gradient(135deg, rgba(255,255,255,0.06) 0 8px, rgba(255,255,255,0.015) 8px 16px),
+                linear-gradient(180deg, #102713, #274c25 52%, #102312);
+        }
+
+        #start-screen h1,
+        #end-screen h1 {
+            margin: 0 0 12px;
+            font-size: clamp(2rem, 4vw, 4rem);
+        }
+
+        #end-screen h1 {
+            color: #fff3a3;
+            text-shadow: 0 4px 0 #1f3d17, 0 8px 18px rgba(0, 0, 0, 0.45);
+            letter-spacing: 1px;
+        }
+
+        #end-screen p,
+        #start-screen p {
+            max-width: 780px;
+            line-height: 1.6;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            margin: 0 0 18px;
+            padding: 12px 18px;
+            border-radius: 18px;
+            background: rgba(0, 0, 0, 0.30);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+        }
+
+        #end-screen.unlocked p {
+            background: rgba(10, 28, 15, 0.55);
+            border: 3px solid rgba(255, 244, 178, 0.72);
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.07);
+        }
+
+        #endMessage {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 760px;
+        }
+
+        #endMessage .retro-count {
+            display: block;
+            color: #fff3a3;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
+        }
+
+        #endMessage .retro-line {
+            display: block;
+            color: #f7f3d8;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 14px 22px;
+            border: 4px solid #c8a85b;
+            border-radius: 0;
+            background: linear-gradient(180deg, #4b7f2f, #2f5d1c);
+            color: #fff5d8;
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #163114, 0 10px 18px rgba(0, 0, 0, 0.35);
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.35);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.06);
+        }
+
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #163114, 0 6px 14px rgba(0, 0, 0, 0.28);
+        }
+
+        #start-screen .intro-row {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        #monkey-portrait {
+            width: 112px;
+            height: 112px;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 18px rgba(0,0,0,0.4));
+        }
+
+        #speech-bubble {
+            position: relative;
+            max-width: 470px;
+            padding: 16px 20px;
+            border: 4px solid #e5d39a;
+            border-radius: 0;
+            background: #f4ebc3;
+            color: #2a1c12;
+            font-weight: 700;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.18);
+        }
+
+        #speech-bubble::before {
+            content: '';
+            position: absolute;
+            left: -14px;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 14px solid #f4ebc3;
+            transform: translateY(-50%);
+            filter: drop-shadow(-2px 0 0 #e5d39a);
+        }
+
+        #start-screen .small-note {
+            opacity: 0.9;
+            font-size: 0.95rem;
+            margin-top: 14px;
+        }
+
+        .portrait-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tiny-caption {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.85;
+        }
+
+        @keyframes forestShift {
+            0% { background-position: 0% 0%, 0% 0%, 100% 12%; }
+            50% { background-position: 100% 10%, 100% 20%, 0% 10%; }
+            100% { background-position: 0% 0%, 0% 0%, 100% 12%; }
+        }
+
+        @keyframes unlockPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        #end-screen h1.pulse {
+            animation: unlockPulse 1.2s ease-in-out 2;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="mazeCanvas"></canvas>
+        <canvas id="entityCanvas"></canvas>
+
+        <div id="hud">
+            <div class="hud-box" id="fishHud">Fish: 0 / 20</div>
+            <div class="hud-box" id="swordfishHud"><img src="swordfish.png" alt="Swordfish"> x 0</div>
+        </div>
+
+        <div id="instructions">Arrow keys move the jungle character. Collect 20 fish to unlock the next quest.</div>
+
+        <div id="start-screen">
+            <h1>Jungle Fish Chase</h1>
+            <div class="intro-row">
+                <div class="portrait-stack">
+                    <img id="monkey-portrait" src="monkey.png" alt="Monkey guide">
+                    <div class="tiny-caption">Forest Guide</div>
+                </div>
+                <div id="speech-bubble">Do you have ten bananas?</div>
+            </div>
+            <p>Fish are hiding in the jungle maze. Grab 20 to unlock the next quest. If you find a swordfish, you can bite back and eat the fish-ghosts for a short time.</p>
+            <div class="button-row">
+                <button id="yesButton">Yes</button>
+                <button id="noButton">No</button>
+            </div>
+            <div class="small-note">No sends you back to the park.</div>
+        </div>
+
+        <div id="end-screen">
+            <h1 id="endTitle">Quest Complete!</h1>
+            <p id="endMessage">You unlocked the next quest.</p>
+            <div class="button-row">
+                <button id="returnButton">Return to Park</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mazeCanvas = document.getElementById('mazeCanvas');
+        const entityCanvas = document.getElementById('entityCanvas');
+        const mazeCtx = mazeCanvas.getContext('2d');
+        const entityCtx = entityCanvas.getContext('2d');
+        const wrapper = document.getElementById('game-wrapper');
+        const startScreen = document.getElementById('start-screen');
+        const endScreen = document.getElementById('end-screen');
+        const endTitle = document.getElementById('endTitle');
+        const endMessage = document.getElementById('endMessage');
+        const returnButton = document.getElementById('returnButton');
+        const yesButton = document.getElementById('yesButton');
+        const noButton = document.getElementById('noButton');
+        const fishHud = document.getElementById('fishHud');
+        const swordfishHud = document.getElementById('swordfishHud');
+
+        const selectedAnimalSrc = localStorage.getItem('selectedAnimal') || 'monkey.png';
+        const selectedAnimalName = localStorage.getItem('selectedAnimalName') || 'Character';
+        const swordfishImg = new Image();
+        swordfishImg.src = 'swordfish.png';
+        const ghostImg = new Image();
+        ghostImg.src = 'ghost.png';
+        const playerImg = new Image();
+        playerImg.src = selectedAnimalSrc;
+
+        const REQUIRED_FISH = 20;
+        const POWER_DURATION = 9;
+
+        const MAP = [
+            '###################',
+            '#P....#...o...#..G#',
+            '#.###.#.###.#.#.###',
+            '#...#.#...#.#.#...#',
+            '###.#.###.#.#.###.#',
+            '#...#.....#.#.....#',
+            '#.#######.#.#####.#',
+            '#.....#...#...#...#',
+            '###.#.#.#####.#.###',
+            '#G..#.#..G..#.#..G#',
+            '#.###.#####.#.###.#',
+            '#...#...o...#...#.#',
+            '#.#####.###.#####.#',
+            '#..G#.....#.....#.#',
+            '#.#.#.###.#.###.#.#',
+            '#o..#...#...#...oG#',
+            '###################'
+        ];
+
+        let running = false;
+        let unlocked = false;
+        let keys = {};
+        let lastTime = 0;
+        let tileSize = 0;
+        let rows = MAP.length;
+        let cols = MAP[0].length;
+        let offsetX = 0;
+        let offsetY = 0;
+        let board = [];
+        let walls = [];
+        let pellets = [];
+        let powerUps = [];
+        let player = null;
+        let ghosts = [];
+        let fishCount = 0;
+        let swordfishCount = 0;
+        let powerTimer = 0;
+        let gameStarted = false;
+        let endMode = 'park';
+
+        yesButton.addEventListener('click', startGame);
+        noButton.addEventListener('click', () => window.location.href = 'park.html');
+
+        document.addEventListener('keydown', event => {
+            keys[event.key] = true;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', event => {
+            keys[event.key] = false;
+        });
+
+        window.addEventListener('resize', resizeGame);
+
+        function resizeGame() {
+            const rect = wrapper.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            mazeCanvas.width = rect.width * dpr;
+            mazeCanvas.height = rect.height * dpr;
+            entityCanvas.width = rect.width * dpr;
+            entityCanvas.height = rect.height * dpr;
+
+            mazeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            entityCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            tileSize = Math.max(26, Math.min(44, Math.floor(Math.min(rect.width / cols, rect.height / rows))));
+            offsetX = Math.floor((rect.width - cols * tileSize) / 2);
+            offsetY = Math.floor((rect.height - rows * tileSize) / 2);
+
+            if (gameStarted && board.length) {
+                drawFrame();
+            }
+        }
+//this function i did
+        function startGame() {
+            startScreen.style.display ='none';
+            endScreen.style.display ='none';
+            endScreen.classList.remove('unlocked');
+            running =true;
+            unlocked =false;
+            gameStarted =true;
+            fishCount =0;
+            swordfishCount =0;
+            powerTimer =0;
+            keys ={};
+            lastTime =performance.now();
+            resizeGame();
+            buildStaticBoard();
+            drawFrame();
+            requestAnimationFrame(loop);
+        }
+
+        function buildStaticBoard() {
+            board = MAP.map(row => row.split(''));
+            walls = [];
+            pellets = [];
+            powerUps = [];
+            ghosts = [];
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const tile = board[row][col];
+                    if (tile === '#') walls.push({ row, col });
+                    if (tile === '.') pellets.push({ row, col, eaten: false });
+                    if (tile === 'o') powerUps.push({ row, col, eaten: false });
+                    if (tile === 'P') {
+                        player = createEntity(row, col, selectedAnimalSrc);
+                        player.direction = 'right';
+                    }
+                    if (tile === 'G') {
+                        ghosts.push(createGhost(row, col, ghosts.length));
+                    }
+                }
+            }
+
+            while (pellets.length + powerUps.length * 2 < REQUIRED_FISH + 4) {
+                for (let row = 1; row < rows - 1; row++) {
+                    for (let col = 1; col < cols - 1; col++) {
+                        if (board[row][col] === ' ') {
+                            board[row][col] = '.';
+                            pellets.push({ row, col, eaten: false });
+                            if (pellets.length + powerUps.length * 2 >= REQUIRED_FISH + 4) break;
+                        }
+                    }
+                    if (pellets.length + powerUps.length * 2 >= REQUIRED_FISH + 4) break;
+                }
+            }
+            updateHud();
+        }
+//these functions i did
+        function createEntity(row, col, imageSrc) {
+            return {
+                row,
+                col,
+                x: cellCenterX(col),
+                y: cellCenterY(row),
+                moving: false,
+                startX: 0,
+                startY: 0,
+                endX: 0,
+                endY: 0,
+                progress: 0,
+                imageSrc
+            };
+        }
+
+        function createGhost(row, col, index) {
+            return {
+                row,
+                col,
+                x: cellCenterX(col),
+                y: cellCenterY(row),
+                moving: false,
+                startX: 0,
+                startY: 0,
+                endX: 0,
+                endY: 0,
+                progress: 0,
+                frightened: false,
+                mode: 'chase',
+                modeTimer: 0,
+                patrolRoute: buildPatrolRoute(index),
+                patrolIndex: 0
+            };
+        }
+
+        function buildPatrolRoute(index) {
+            const routes = [
+                [
+                    { row: 1, col: 1 }, { row: 1, col: 17 }, { row: 15, col: 17 }, { row: 15, col: 1 }
+                ],
+                [
+                    { row: 3, col: 3 }, { row: 3, col: 15 }, { row: 13, col: 15 }, { row: 13, col: 3 }
+                ],
+                [
+                    { row: 5, col: 5 }, { row: 5, col: 13 }, { row: 11, col: 13 }, { row: 11, col: 5 }
+                ],
+                [
+                    { row: 7, col: 7 }, { row: 7, col: 11 }, { row: 9, col: 11 }, { row: 9, col: 7 }
+                ]
+            ];
+
+            return routes[index % routes.length].filter(point => isWalkable(point.row, point.col));
+        }
+
+        function updateHud() {
+            fishHud.textContent = `Fish: ${fishCount} / ${REQUIRED_FISH}`;
+            swordfishHud.innerHTML = `<img src="swordfish.png" alt="Swordfish"> x ${swordfishCount}`;
+        }
+
+        function cellCenterX(col) {
+            return offsetX + col * tileSize + tileSize / 2;
+        }
+
+        function cellCenterY(row) {
+            return offsetY + row * tileSize + tileSize / 2;
+        }
+
+        function isWalkable(row, col) {
+            const tile = board[row]?.[col];
+            return tile && tile !== '#';
+        }
+
+        function canMove(row, col, direction) {
+            let nextRow = row;
+            let nextCol = col;
+
+            if (direction === 'up') nextRow -= 1;
+            if (direction === 'down') nextRow += 1;
+            if (direction === 'left') nextCol -= 1;
+            if (direction === 'right') nextCol += 1;
+
+            if (nextCol < 0 || nextCol >= cols || nextRow < 0 || nextRow >= rows) return false;
+
+            if (board[row]?.[col] === ' ' && (nextCol < 0 || nextCol >= cols)) return true;
+
+            return isWalkable(nextRow, nextCol);
+        }
+
+        function tryMove(direction) {
+            if (!running || unlocked || player.moving) return;
+            if (!canMove(player.row, player.col, direction)) return;
+
+            const nextRow = direction === 'up' ? player.row - 1 : direction === 'down' ? player.row + 1 : player.row;
+            const nextCol = direction === 'left' ? player.col - 1 : direction === 'right' ? player.col + 1 : player.col;
+
+            player.moving = true;
+            player.progress = 0;
+            player.startX = player.x;
+            player.startY = player.y;
+            player.endX = cellCenterX(nextCol);
+            player.endY = cellCenterY(nextRow);
+            player.row = nextRow;
+            player.col = nextCol;
+            player.direction = direction;
+        }
+
+        function drawBoard() {
+            const width = wrapper.clientWidth;
+            const height = wrapper.clientHeight;
+            mazeCtx.clearRect(0, 0, width, height);
+
+            const glow = mazeCtx.createRadialGradient(width * 0.5, height * 0.32, 18, width * 0.5, height * 0.5, Math.max(width, height) * 0.9);
+            glow.addColorStop(0, 'rgba(255,255,255,0.07)');
+            glow.addColorStop(1, 'rgba(255,255,255,0)');
+            mazeCtx.fillStyle = glow;
+            mazeCtx.fillRect(0, 0, width, height);
+
+            for (const wall of walls) {
+                drawHedge(wall.row, wall.col);
+            }
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (board[row][col] === ' ') {
+                        mazeCtx.fillStyle = 'rgba(255,255,255,0.015)';
+                        mazeCtx.fillRect(offsetX + col * tileSize, offsetY + row * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+
+            drawPellets();
+            drawPowerUps();
+        }
+
+        function drawHedge(row, col) {
+            const x = offsetX + col * tileSize;
+            const y = offsetY + row * tileSize;
+            const grad = mazeCtx.createLinearGradient(x, y, x + tileSize, y + tileSize);
+            grad.addColorStop(0, '#15311b');
+            grad.addColorStop(0.45, '#2d6a35');
+            grad.addColorStop(1, '#0e2313');
+
+            mazeCtx.fillStyle = grad;
+            mazeCtx.fillRect(x, y, tileSize, tileSize);
+            mazeCtx.fillStyle = 'rgba(126, 197, 94, 0.16)';
+            mazeCtx.fillRect(x, y, tileSize, Math.max(2, Math.floor(tileSize * 0.18)));
+            mazeCtx.fillRect(x, y, Math.max(2, Math.floor(tileSize * 0.18)), tileSize);
+        }
+
+        function drawPellets() {
+            for (const pellet of pellets) {
+                if (pellet.eaten) continue;
+                const x = cellCenterX(pellet.col);
+                const y = cellCenterY(pellet.row);
+                drawFishPellet(mazeCtx, x, y, tileSize * 0.18, '#f6efe5', '#b0e6c0');
+            }
+        }
+
+        function drawPowerUps() {
+            for (const powerUp of powerUps) {
+                if (powerUp.eaten) continue;
+                const x = cellCenterX(powerUp.col);
+                const y = cellCenterY(powerUp.row);
+                const size = tileSize * 0.60;
+                if (swordfishImg.complete && swordfishImg.naturalWidth > 0) {
+                    mazeCtx.save();
+                    mazeCtx.translate(x, y);
+                    mazeCtx.fillStyle = 'rgba(255, 247, 192, 0.34)';
+                    mazeCtx.beginPath();
+                    mazeCtx.arc(0, 0, size * 0.90, 0, Math.PI * 2);
+                    mazeCtx.fill();
+                    mazeCtx.drawImage(swordfishImg, -size / 2, -size / 2, size, size);
+                    mazeCtx.restore();
+                } else {
+                    drawFishPellet(mazeCtx, x, y, size * 0.30, '#f6b85d', '#fff0bf');
+                }
+            }
+        }
+
+        function drawFishPellet(ctx, x, y, size, bodyColor, tailColor) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.28)';
+            ctx.beginPath();
+            ctx.ellipse(0, size * 0.38, size * 1.45, size * 0.52, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            const body = ctx.createRadialGradient(-size * 0.10, -size * 0.08, size * 0.06, 0, 0, size * 0.92);
+            body.addColorStop(0, '#ffffff');
+            body.addColorStop(0.30, tailColor);
+            body.addColorStop(1, bodyColor);
+
+            ctx.fillStyle = body;
+            ctx.strokeStyle = '#f9f6e8';
+            ctx.lineWidth = Math.max(1, size * 0.12);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size * 0.86, size * 0.55, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = bodyColor;
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.90, 0);
+            ctx.lineTo(-size * 1.34, -size * 0.44);
+            ctx.lineTo(-size * 1.18, 0);
+            ctx.lineTo(-size * 1.34, size * 0.44);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#173521';
+            ctx.beginPath();
+            ctx.arc(size * 0.24, -size * 0.12, Math.max(1.6, size * 0.10), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            const size = tileSize * 0.92;
+            entityCtx.save();
+            entityCtx.translate(player.x, player.y);
+            if (playerImg.complete && playerImg.naturalWidth > 0) {
+                entityCtx.drawImage(playerImg, -size / 2, -size / 2, size, size);
+            } else {
+                entityCtx.fillStyle = '#0f1d2b';
+                entityCtx.beginPath();
+                entityCtx.ellipse(0, 0, size * 0.36, size * 0.42, 0, 0, Math.PI * 2);
+                entityCtx.fill();
+                entityCtx.fillStyle = '#ffffff';
+                entityCtx.beginPath();
+                entityCtx.ellipse(0, size * 0.05, size * 0.22, size * 0.28, 0, 0, Math.PI * 2);
+                entityCtx.fill();
+            }
+            entityCtx.restore();
+        }
+
+        function drawGhost(ghost) {
+            const size = tileSize * 0.88;
+            entityCtx.save();
+            entityCtx.translate(ghost.x, ghost.y);
+
+            const shadowAlpha = ghost.frightened && powerTimer > 0 ? 0.12 : 0.25;
+            entityCtx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+            entityCtx.beginPath();
+            entityCtx.ellipse(0, size * 0.36, size * 0.30, size * 0.14, 0, 0, Math.PI * 2);
+            entityCtx.fill();
+
+            if (ghostImg.complete && ghostImg.naturalWidth > 0) {
+                entityCtx.globalAlpha = ghost.frightened && powerTimer > 0 ? 0.82 : 1;
+                entityCtx.filter = ghost.frightened && powerTimer > 0 ? 'hue-rotate(200deg) saturate(0.7) brightness(1.15)' : 'none';
+                entityCtx.drawImage(ghostImg, -size / 2, -size / 2, size, size);
+                entityCtx.filter = 'none';
+            } else {
+                entityCtx.fillStyle = ghost.frightened && powerTimer > 0 ? '#5a97ff' : '#75d7b7';
+                entityCtx.beginPath();
+                entityCtx.ellipse(0, 0, size * 0.42, size * 0.32, 0, 0, Math.PI * 2);
+                entityCtx.fill();
+            }
+
+            entityCtx.restore();
+        }
+
+        function updatePlayer(delta) {
+            if (!player.moving) return;
+
+            player.progress += delta * 5;
+            const t = Math.min(1, player.progress);
+            player.x = player.startX + (player.endX - player.startX) * t;
+            player.y = player.startY + (player.endY - player.startY) * t;
+
+            if (t >= 1) {
+                player.moving = false;
+                player.x = player.endX;
+                player.y = player.endY;
+                collectAt(player.row, player.col);
+            }
+        }
+
+        function collectAt(row, col) {
+            const pellet = pellets.find(item => item.row === row && item.col === col && !item.eaten);
+            if (pellet) {
+                pellet.eaten = true;
+                fishCount += 1;
+                updateHud();
+            }
+
+            const powerUp = powerUps.find(item => item.row === row && item.col === col && !item.eaten);
+            if (powerUp) {
+                powerUp.eaten = true;
+                fishCount += 2;
+                swordfishCount += 1;
+                powerTimer = POWER_DURATION;
+                ghosts.forEach(ghost => ghost.frightened = true);
+                updateHud();
+            }
+
+            if (!unlocked && fishCount >= REQUIRED_FISH) {
+                unlockQuest();
+            }
+        }
+
+        function unlockQuest() {
+            running =false;
+            unlocked =true;
+            endMode ='park';
+            endScreen.classList.add('unlocked');
+            returnButton.textContent = 'Return to Park';
+            endTitle.textContent = 'Quest Unlocked!';
+            endTitle.classList.add('pulse');
+            endMessage.innerHTML = `<span class="retro-count">You collected ${fishCount} fish.</span><span class="retro-line">The next quest is now open.</span>`;
+            endScreen.style.display = 'flex';
+        }
+
+        function updateGhosts(delta) {
+            ghosts.forEach((ghost, index) => {
+                ghost.modeTimer += delta;
+
+                if (powerTimer > 0) {
+                    ghost.frightened = true;
+                } else {
+                    ghost.frightened = false;
+                }
+
+                if (ghost.mode === 'chase' && ghost.modeTimer > 7 + index) {
+                    ghost.mode = 'patrol';
+                    ghost.modeTimer = 0;
+                }
+
+                if (!ghost.moving) {
+                    const target = chooseGhostTarget(ghost);
+                    if (target) {
+                        const direction = stepToward(ghost.row, ghost.col, target.row, target.col);
+                        if (direction) startGhostMove(ghost, direction);
+                    }
+                }
+
+                if (ghost.moving) {
+                    ghost.progress += delta * (ghost.frightened ? 4.2 : 3.2);
+                    const t = Math.min(1, ghost.progress);
+                    ghost.x = ghost.startX + (ghost.endX - ghost.startX) * t;
+                    ghost.y = ghost.startY + (ghost.endY - ghost.startY) * t;
+                    if (t >= 1) {
+                        ghost.moving = false;
+                        ghost.x = ghost.endX;
+                        ghost.y = ghost.endY;
+                        resolveGhostCollision(ghost, index);
+                    }
+                }
+            });
+
+            if (powerTimer > 0) {
+                powerTimer -= delta;
+                if (powerTimer <= 0) {
+                    powerTimer = 0;
+                    ghosts.forEach(ghost => ghost.frightened = false);
+                }
+            }
+        }
+
+        function chooseGhostTarget(ghost) {
+            if (ghost.mode === 'chase') {
+                return { row: player.row, col: player.col };
+            }
+
+            const route = ghost.patrolRoute;
+            if (!route.length) return { row: ghost.row, col: ghost.col };
+
+            const target = route[ghost.patrolIndex % route.length];
+            if (ghost.row === target.row && ghost.col === target.col) {
+                ghost.patrolIndex = (ghost.patrolIndex + 1) % route.length;
+            }
+            return route[ghost.patrolIndex % route.length];
+        }
+
+        function stepToward(row, col, targetRow, targetCol) {
+            const options = [];
+            if (targetRow < row && canMove(row, col, 'up')) options.push('up');
+            if (targetRow > row && canMove(row, col, 'down')) options.push('down');
+            if (targetCol < col && canMove(row, col, 'left')) options.push('left');
+            if (targetCol > col && canMove(row, col, 'right')) options.push('right');
+
+            if (!options.length) {
+                const fallback = ['up', 'right', 'down', 'left'].filter(direction => canMove(row, col, direction));
+                if (!fallback.length) return null;
+                return fallback[Math.floor(Math.random() * fallback.length)];
+            }
+
+            return options[Math.floor(Math.random() * options.length)];
+        }
+
+        function startGhostMove(ghost, direction) {
+            if (!canMove(ghost.row, ghost.col, direction)) return;
+
+            const nextRow = direction === 'up' ? ghost.row - 1 : direction === 'down' ? ghost.row + 1 : ghost.row;
+            const nextCol = direction === 'left' ? ghost.col - 1 : direction === 'right' ? ghost.col + 1 : ghost.col;
+
+            ghost.moving = true;
+            ghost.progress = 0;
+            ghost.startX = ghost.x;
+            ghost.startY = ghost.y;
+            ghost.endX = cellCenterX(nextCol);
+            ghost.endY = cellCenterY(nextRow);
+            ghost.row = nextRow;
+            ghost.col = nextCol;
+        }
+
+        function resolveGhostCollision(ghost, index) {
+            if (ghost.row !== player.row || ghost.col !== player.col) return;
+
+            if (ghost.frightened && powerTimer > 0) {
+                fishCount += 2;
+                swordfishCount += 1;
+                ghosts[index].row = 1 + index;
+                ghosts[index].col = cols - 2 - index;
+                ghosts[index].x = cellCenterX(ghosts[index].col);
+                ghosts[index].y = cellCenterY(ghosts[index].row);
+                ghosts[index].moving = false;
+                ghosts[index].progress = 0;
+                ghosts[index].frightened = false;
+                ghosts[index].mode = 'patrol';
+                ghosts[index].modeTimer = 0;
+                ghosts[index].patrolIndex = 0;
+                updateHud();
+            } else {
+                running = false;
+                endMode = 'retry';
+                endScreen.classList.remove('unlocked');
+                endTitle.classList.remove('pulse');
+                returnButton.textContent = 'Retry Quest';
+                endTitle.textContent = "You've been caught!";
+                endMessage.textContent = 'Press retry to try the quest again.';
+                endScreen.style.display = 'flex';
+            }
+        }
+
+        function loop(timestamp) {
+            if (!running) {
+                drawFrame();
+                return;
+            }
+
+            const delta = Math.min(0.05, (timestamp - lastTime) / 1000 || 0);
+            lastTime = timestamp;
+
+            if (!player.moving) {
+                if (keys.ArrowUp) tryMove('up');
+                else if (keys.ArrowDown) tryMove('down');
+                else if (keys.ArrowLeft) tryMove('left');
+                else if (keys.ArrowRight) tryMove('right');
+            }
+
+            updatePlayer(delta);
+            updateGhosts(delta);
+            drawFrame();
+
+            requestAnimationFrame(loop);
+        }
+
+        function drawFrame() {
+            drawBoard();
+            entityCtx.clearRect(0, 0, entityCanvas.width, entityCanvas.height);
+            drawPlayer();
+            ghosts.forEach(drawGhost);
+        }
+
+        returnButton.addEventListener('click', () => {
+            if (endMode === 'retry') {
+                startGame();
+                return;
+            }
+            window.location.href = 'park.html';
+        });
+
+        resizeGame();
+    </script>
+</body>
+</html>

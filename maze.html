@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Quest</title>
+    <style>
+        :root {
+            --frame: #3a2010;
+            --ocean-top: #031d35;
+            --ocean-mid: #06304f;
+            --ocean-bottom: #0c4b70;
+            --seaweed-dark: #173726;
+            --seaweed-mid: #245a43;
+            --text: #fdf7e7;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--frame);
+            border: 20px solid var(--frame);
+            box-sizing: border-box;
+            overflow: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 95%;
+            max-width: 1300px;
+            height: calc(100vh - 60px);
+            border-radius: 20px;
+            overflow: hidden;
+            background: linear-gradient(180deg, var(--ocean-top), var(--ocean-mid) 52%, var(--ocean-bottom));
+            box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.08);
+        }
+
+        #game-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(128, 201, 255, 0.22), transparent 26%),
+                radial-gradient(circle at 70% 30%, rgba(65, 141, 214, 0.18), transparent 28%),
+                radial-gradient(circle at 30% 75%, rgba(12, 84, 153, 0.22), transparent 26%),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 0 24%, rgba(255,255,255,0) 24% 48%, rgba(255,255,255,0.04) 48% 72%, rgba(255,255,255,0) 72% 100%);
+            background-size: 240% 240%, 240% 240%, 240% 240%, 180% 180%;
+            animation: oceanShift 10s linear infinite;
+            opacity: 0.9;
+            pointer-events: none;
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #mazeCanvas {
+            z-index: 1;
+        }
+
+        #gameCanvas {
+            z-index: 2;
+        }
+
+        #hud {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .pill {
+            white-space: nowrap;
+        }
+
+        #timerText {
+            position: relative;
+            padding: 12px 26px;
+            border: 4px solid #f5d36a;
+            border-radius: 0;
+            background: linear-gradient(180deg, #2c1a10, #5a2a14 55%, #31170d);
+            color: #fff2b2;
+            font-size: 1.15rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+            box-shadow: 0 5px 0 #130b07, 0 10px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        #timerText::before {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border: 2px solid rgba(255, 255, 255, 0.14);
+            pointer-events: none;
+        }
+
+        #instructions {
+            position: absolute;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: var(--text);
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        #start-screen,
+        #end-screen {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.58);
+            color: var(--text);
+        }
+
+        #end-screen {
+            background:
+                radial-gradient(circle at top, rgba(255, 237, 170, 0.18), transparent 28%),
+                linear-gradient(180deg, rgba(16, 8, 32, 0.84), rgba(48, 16, 72, 0.88) 55%, rgba(12, 28, 68, 0.92));
+        }
+
+        #end-screen.retro-success {
+            background:
+                radial-gradient(circle at 50% 18%, rgba(255, 246, 194, 0.34), transparent 24%),
+                repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0 8px, rgba(255,255,255,0.02) 8px 16px),
+                linear-gradient(180deg, #230f46, #3d1767 48%, #0f2956);
+        }
+
+        #start-screen h1,
+        #end-screen h1 {
+            margin: 0 0 12px;
+            font-size: clamp(2rem, 4vw, 4rem);
+        }
+
+        #end-screen.retro-success h1 {
+            color: #fff1a8;
+            text-shadow: 0 4px 0 #2a0d4d, 0 8px 18px rgba(0, 0, 0, 0.45);
+            letter-spacing: 1px;
+        }
+
+        #end-screen p {
+            max-width: 760px;
+            line-height: 1.6;
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            margin: 0 0 18px;
+            padding: 12px 18px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.30);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+        }
+
+        #end-screen.retro-success p {
+            background: rgba(22, 10, 36, 0.55);
+            border: 3px solid rgba(255, 241, 168, 0.7);
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 14px 22px;
+            border: 4px solid #f5d36a;
+            border-radius: 0;
+            background: linear-gradient(180deg, #d04d27, #a72e13);
+            color: #fff5d8;
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #6a180b, 0 10px 18px rgba(0, 0, 0, 0.35);
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.35);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #6a180b, 0 6px 14px rgba(0, 0, 0, 0.28);
+        }
+
+        #start-screen .intro-row {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        #penguin-portrait {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            image-rendering: auto;
+            filter: drop-shadow(0 10px 18px rgba(0,0,0,0.4));
+        }
+
+        #speech-bubble {
+            position: relative;
+            max-width: 470px;
+            padding: 16px 20px;
+            border: 4px solid #fff0be;
+            border-radius: 0;
+            background: #f9f2cf;
+            color: #2a1c12;
+            font-weight: 700;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.18);
+        }
+
+        #speech-bubble::before {
+            content: '';
+            position: absolute;
+            left: -14px;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 14px solid #f9f2cf;
+            transform: translateY(-50%);
+            filter: drop-shadow(-2px 0 0 #fff0be);
+        }
+
+        @keyframes oceanShift {
+            0% { background-position: 0% 0%, 100% 12%, 0% 100%, 0% 50%; }
+            50% { background-position: 100% 8%, 0% 18%, 100% 0%, 100% 50%; }
+            100% { background-position: 0% 0%, 100% 12%, 0% 100%, 0% 50%; }
+        }
+
+        #end-screen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="mazeCanvas"></canvas>
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="hud">
+            <div class="pill" id="timerText">Time: 60</div>
+        </div>
+
+        <div id="instructions">Use the arrow keys to move through the maze and reach the ice chest.</div>
+
+        <div id="start-screen">
+            <h1>Penguin Maze Quest</h1>
+            <div class="intro-row">
+                <img id="penguin-portrait" src="pen.png" alt="Penguin">
+                <div id="speech-bubble">Do you have ten fish?</div>
+            </div>
+            <div class="button-row">
+                <button id="yesNowButton">Yes</button>
+                <button id="haveFishButton">No</button>
+            </div>
+        </div>
+
+        <div id="end-screen">
+            <h1 id="endTitle">Quest Complete!</h1>
+            <p id="endMessage">You reached the ice chest.</p>
+            <div class="button-row">
+                <button id="restartButton">Return to Park</button>
+            </div>
+        </div>
+    </div>
+     <!-- besides style choices, the framework for the code above wass created using github copilot -->
+
+    <script>
+        const mazeCanvas = document.getElementById('mazeCanvas');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const mazeCtx = mazeCanvas.getContext('2d');
+        const gameCtx = gameCanvas.getContext('2d');
+        const wrapper = document.getElementById('game-wrapper');
+        const startScreen = document.getElementById('start-screen');
+        const endScreen = document.getElementById('end-screen');
+        const endTitle = document.getElementById('endTitle');
+        const endMessage = document.getElementById('endMessage');
+        const timerText = document.getElementById('timerText');
+        const haveFishButton = document.getElementById('haveFishButton');
+        const yesNowButton = document.getElementById('yesNowButton');
+        const restartButton = document.getElementById('restartButton');
+
+        const penguinImg=new Image();
+        penguinImg.src='pen.png';
+
+        const selectedAnimalSrc = localStorage.getItem('selectedAnimal') || 'pen.png';
+        const selectedAnimalName = localStorage.getItem('selectedAnimalName') || 'Penguin';
+        let playerImg=new Image();
+        playerImg.src = selectedAnimalSrc;
+
+        // Exit chest image (prefer local asset `icechest.png`, fallback to canvas drawing)
+        const chestImg=new Image();
+        chestImg.src='icechest.png';
+
+        let running =false;
+        let won =false;
+        let lost =false;
+        let lastTime =0;
+        let countdown =60;
+        let lastSecond =-1;
+        let keys ={};
+
+        let rows =0;
+        let cols =0;
+        let cellSize =40;
+        let wallSize =12;
+        let offsetX =0;
+        let offsetY =0;
+        let cells =[];
+        let player =null;
+        let exitCell =null;
+
+        haveFishButton.addEventListener('click',() => {
+            window.location.href ='park.html';
+        });
+
+        yesNowButton.addEventListener('click',startGame);
+
+        document.addEventListener('keydown',event => {
+            keys[event.key] =true;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', event => {
+            keys[event.key] = false;
+        });
+
+        window.addEventListener('resize', resizeGame);
+
+        function resizeGame() {
+            const rect = wrapper.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            mazeCanvas.width = rect.width * dpr;
+            mazeCanvas.height = rect.height * dpr;
+            gameCanvas.width = rect.width * dpr;
+            gameCanvas.height = rect.height * dpr;
+
+            mazeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            gameCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            buildMaze(rect.width, rect.height);
+        }
+
+        function buildMaze(width, height) {
+            cellSize = Math.max(38, Math.min(56, Math.floor(Math.min(width, height) / 14)));
+            wallSize = Math.max(10, Math.floor(cellSize * 0.28));
+
+            cols = Math.max(15, Math.floor(width / cellSize));
+            rows = Math.max(11, Math.floor(height / cellSize));
+            if (cols % 2 === 0) cols -= 1;
+            if (rows % 2 === 0) rows -= 1;
+
+            offsetX = Math.floor((width - cols * cellSize) / 2);
+            offsetY = Math.floor((height - rows * cellSize) / 2);
+
+            cells = Array.from({ length: rows }, (_, row) =>
+                Array.from({ length: cols }, (_, col) => ({
+                    row,
+                    col,
+                    walls: { top: true, right: true, bottom: true, left: true },
+                    visited: false
+                }))
+            );
+
+            const start = cells[1][1];
+            start.visited = true;
+            const stack = [start];
+
+            while (stack.length) {
+                const current = stack[stack.length - 1];
+                const neighbors = getNeighbors(current).filter(cell => !cell.visited);
+
+                if (!neighbors.length) {
+                    stack.pop();
+                    continue;
+                }
+
+                const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                removeWalls(current, next);
+                next.visited = true;
+                stack.push(next);
+            }
+
+            exitCell = cells[rows-2][cols-2];
+
+            player = {
+                row: 1,
+                col: 1,
+                x: cellCenterX(1),
+                y: cellCenterY(1),
+                moving: false,
+                startX: 0,
+                startY: 0,
+                endX: 0,
+                endY: 0,
+                progress: 0
+            };
+
+            countdown = 60;
+            lastSecond = -1;
+            updateHud();
+        }
+
+        function getNeighbors(cell) {
+            const results = [];
+            const { row, col } = cell;
+
+            if (row > 1) results.push(cells[row - 2][col]);
+            if (row < rows - 2) results.push(cells[row + 2][col]);
+            if (col > 1) results.push(cells[row][col - 2]);
+            if (col < cols - 2) results.push(cells[row][col + 2]);
+
+            return results;
+        }
+
+        function removeWalls(a, b) {
+            const rowDiff = a.row - b.row;
+            const colDiff = a.col - b.col;
+
+            if (rowDiff === 2) {
+                a.walls.top = false;
+                b.walls.bottom = false;
+                clearBetween(a.row - 1, a.col);
+            } else if (rowDiff === -2) {
+                a.walls.bottom = false;
+                b.walls.top = false;
+                clearBetween(a.row + 1, a.col);
+            } else if (colDiff === 2) {
+                a.walls.left = false;
+                b.walls.right = false;
+                clearBetween(a.row, a.col - 1);
+            } else if (colDiff === -2) {
+                a.walls.right = false;
+                b.walls.left = false;
+                clearBetween(a.row, a.col + 1);
+            }
+        }
+
+        function clearBetween(row, col) {
+            if (cells[row] && cells[row][col]) {
+                cells[row][col].walls.top = false;
+                cells[row][col].walls.right = false;
+                cells[row][col].walls.bottom = false;
+                cells[row][col].walls.left = false;
+            }
+        }
+
+        function cellCenterX(col) {
+            return offsetX + col * cellSize + cellSize / 2;
+        }
+
+        function cellCenterY(row) {
+            return offsetY + row * cellSize + cellSize / 2;
+        }
+
+        function updateHud() {
+            timerText.textContent = `Time: ${Math.max(0, countdown)}`;
+        }
+
+        function canMove(row, col, direction) {
+            const cell = cells[row]?.[col];
+            if (!cell) return false;
+
+            // Also verify the target cell's opposing wall so the move is always mutually allowed
+            if (direction === 'up') {
+                if (row <= 0 || cell.walls.top) return false;
+                const target = cells[row - 1]?.[col];
+                return target && !target.walls.bottom;
+            }
+            if (direction === 'down') {
+                if (row >= rows - 1 || cell.walls.bottom) return false;
+                const target = cells[row + 1]?.[col];
+                return target && !target.walls.top;
+            }
+            if (direction === 'left') {
+                if (col <= 0 || cell.walls.left) return false;
+                const target = cells[row]?.[col - 1];
+                return target && !target.walls.right;
+            }
+            if (direction === 'right') {
+                if (col >= cols - 1 || cell.walls.right) return false;
+                const target = cells[row]?.[col + 1];
+                return target && !target.walls.left;
+            }
+            return false;
+        }
+
+        function tryMove(direction) {
+            if (!running || won || lost || player.moving) return;
+            if (!canMove(player.row, player.col, direction)) return;
+
+            const nextRow = direction === 'up' ? player.row - 1 : direction === 'down' ? player.row + 1 : player.row;
+            const nextCol = direction === 'left' ? player.col - 1 : direction === 'right' ? player.col + 1 : player.col;
+
+            player.moving = true;
+            player.progress = 0;
+            player.startX = player.x;
+            player.startY = player.y;
+            player.endX = cellCenterX(nextCol);
+            player.endY = cellCenterY(nextRow);
+            player.row = nextRow;
+            player.col = nextCol;
+        }
+
+        function drawMaze() {
+            const width = wrapper.clientWidth;
+            const height = wrapper.clientHeight;
+
+            mazeCtx.clearRect(0, 0, width, height);
+
+            const bgGlow = mazeCtx.createRadialGradient(width * 0.5, height * 0.35, 20, width * 0.5, height * 0.5, Math.max(width, height) * 0.9);
+            bgGlow.addColorStop(0, 'rgba(255,255,255,0.08)');
+            bgGlow.addColorStop(1, 'rgba(255,255,255,0)');
+            mazeCtx.fillStyle = bgGlow;
+            mazeCtx.fillRect(0, 0, width, height);
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const cell = cells[row][col];
+                    const x = offsetX + col * cellSize;
+                    const y = offsetY + row * cellSize;
+
+                    mazeCtx.fillStyle = 'rgba(255,255,255,0.02)';
+                    mazeCtx.fillRect(x, y, cellSize, cellSize);
+
+                    if (cell.walls.top) drawBlock(x - wallSize / 2, y - wallSize / 2, cellSize + wallSize, wallSize, true);
+                    if (cell.walls.right) drawBlock(x + cellSize - wallSize / 2, y - wallSize / 2, wallSize, cellSize + wallSize, false);
+                    if (cell.walls.bottom) drawBlock(x - wallSize / 2, y + cellSize - wallSize / 2, cellSize + wallSize, wallSize, true);
+                    if (cell.walls.left) drawBlock(x - wallSize / 2, y - wallSize / 2, wallSize, cellSize + wallSize, false);
+                }
+            }
+
+            drawExitChest();
+        }
+
+        function drawBlock(x, y, w, h, horizontal) {
+            const gradient = gameCtx.createLinearGradient(x, y, x + (horizontal ? 0 : w), y + (horizontal ? h : 0));
+            gradient.addColorStop(0, '#173726');
+            gradient.addColorStop(0.45, '#245a43');
+            gradient.addColorStop(1, '#102d1f');
+
+            gameCtx.fillStyle = gradient;
+            gameCtx.fillRect(x, y, w, h);
+
+            gameCtx.fillStyle = 'rgba(92, 176, 120, 0.14)';
+            if (horizontal) {
+                gameCtx.fillRect(x, y, w, Math.max(2, Math.floor(h * 0.22)));
+            } else {
+                gameCtx.fillRect(x, y, Math.max(2, Math.floor(w * 0.22)), h);
+            }
+        }
+
+        function drawExitChest() {
+            const x = cellCenterX(exitCell.col);
+            const y = cellCenterY(exitCell.row);
+            const size = cellSize * 0.56;
+            // Prefer drawing the actual icechest asset if available
+            if (chestImg && chestImg.complete && chestImg.naturalWidth > 0) {
+                gameCtx.drawImage(chestImg, x - size / 2, y - size / 2, size, size);
+                return;
+            }
+
+            
+            gameCtx.save();
+            gameCtx.translate(x, y);
+
+            gameCtx.fillStyle = 'rgba(255, 244, 180, 0.22)';
+            gameCtx.beginPath();
+            gameCtx.arc(0, 0, size * 0.9, 0, Math.PI * 2);
+            gameCtx.fill();
+
+            gameCtx.fillStyle = '#b47a42';
+            gameCtx.fillRect(-size * 0.5, -size * 0.2, size, size * 0.5);
+            gameCtx.fillStyle = '#8a5b2e';
+            gameCtx.fillRect(-size * 0.5, -size * 0.28, size, size * 0.18);
+            gameCtx.strokeStyle = '#f3d7a1';
+            gameCtx.lineWidth = 3;
+            gameCtx.strokeRect(-size * 0.5, -size * 0.2, size, size * 0.5);
+            gameCtx.fillStyle = '#f0fffe';
+            gameCtx.beginPath();
+            gameCtx.moveTo(-size * 0.12, -size * 0.2);
+            gameCtx.lineTo(size * 0.12, -size * 0.2);
+            gameCtx.lineTo(size * 0.08, size * 0.15);
+            gameCtx.lineTo(-size * 0.08, size * 0.15);
+            gameCtx.closePath();
+            gameCtx.fill();
+
+            gameCtx.restore();
+        }
+
+        function drawPlayer() {
+            const size = cellSize * 0.92;
+
+            gameCtx.save();
+            gameCtx.translate(player.x, player.y);
+
+            if (playerImg.complete && playerImg.naturalWidth > 0) {
+                gameCtx.drawImage(playerImg, -size / 2, -size / 2, size, size);
+            } else {
+                gameCtx.fillStyle = '#0f1d2b';
+                gameCtx.beginPath();
+                gameCtx.ellipse(0, 0, size * 0.36, size * 0.42, 0, 0, Math.PI * 2);
+                gameCtx.fill();
+                gameCtx.fillStyle = '#ffffff';
+                gameCtx.beginPath();
+                gameCtx.ellipse(0, size * 0.05, size * 0.22, size * 0.28, 0, 0, Math.PI * 2);
+                gameCtx.fill();
+            }
+
+            gameCtx.restore();
+        }
+
+        function movePlayer(delta) {
+            if (!player.moving) return;
+
+            player.progress += delta * 5;
+            const t = Math.min(1, player.progress);
+            player.x = player.startX + (player.endX - player.startX) * t;
+            player.y = player.startY + (player.endY - player.startY) * t;
+
+            if (t >= 1) {
+                player.moving = false;
+                player.x = player.endX;
+                player.y = player.endY;
+                if (player.row === exitCell.row && player.col === exitCell.col) {
+                    finishGame(true, 'You reached the ice chest and finished the maze quest.');
+                }
+            }
+        }
+
+        function finishGame(success, message) {
+            running = false;
+            won = success;
+            lost = !success;
+            endScreen.classList.toggle('retro-success', success);
+            endTitle.textContent = success ? 'Great Job! You Found the Ice Chest!' : 'Quest Failed';
+            endMessage.textContent = success ? 'Congrats, return to the park to continue your adventure.' : message;
+            // add a short celebratory pulse class
+            endTitle.classList.add('celebrate');
+            setTimeout(() => endTitle.classList.remove('celebrate'), 2500);
+            endScreen.style.display = 'flex';
+        }
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            endScreen.style.display = 'none';
+            endScreen.classList.remove('retro-success');
+            running = true;
+            won=false;
+            lost=false;
+            keys={};
+            playerImg =new Image();
+            playerImg.src = selectedAnimalSrc;
+            resizeGame();
+            lastTime =performance.now();
+            requestAnimationFrame(loop);
+        }
+
+        restartButton.addEventListener('click', () => {
+            window.location.href = 'park.html';
+        });
+
+        function loop(timestamp) {
+            if (!running) {
+                return;
+            }
+//const meanss caan not be resasssigned after it is first set
+            const delta = Math.min(0.05, (timestamp - lastTime) / 1000 || 0);
+            lastTime = timestamp;
+
+            const second = Math.floor(timestamp / 1000);
+
+            //i did this hopefully it works
+            if (second !==lastSecond){
+                lastSecond =second;
+                countdown -= 1;
+                updateHud();
+                if (countdown<0){
+                    finishGame(false, 'Time ran out before you reached the ice chest.');
+                    return;
+                }
+            }
+
+            if (!player.moving){
+                if(keys.ArrowUp) 
+                {tryMove('up');}
+
+                else if(keys.ArrowDown) 
+                {tryMove('down');}
+
+                else if(keys.ArrowLeft) 
+                {tryMove('left');}
+
+                else if(keys.ArrowRight) 
+                {tryMove('right');}
+            }
+
+            movePlayer(delta);
+
+            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            drawMaze();
+            drawPlayer();
+
+            requestAnimationFrame(loop);
+        }
+
+        resizeGame();
+    </script>
+</body>
+</html>
