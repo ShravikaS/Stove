@@ -96,6 +96,12 @@ body {
     
   }
   
+  #main-img {
+    width: 90vw;
+    height: 90vh;
+    object-fit: contain;
+    border-radius: 20px;
+}
   
   
   
