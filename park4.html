@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park</title>
+    <link rel="stylesheet" href="style2.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        #right-arrow {
+            position: fixed;
+            right: 95px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 9999;
+            animation: pulseArrow 1s ease-in-out infinite;
+        }
+
+
+        @keyframes pulseArrow {
+            0%, 100% { transform: translateY(-50%) translateX(0px); opacity: 1; }
+            50%       { transform: translateY(-50%) translateX(8px); opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <img class="park-bg" src="park.png" alt="park">
+    <img id="player-animal" src="" alt="your animal">
+
+    <!-- Red arrow pinned to right edge of screen -->
+    <div id="right-arrow" title="Go to next area">
+        <img src="arrow.png" alt="go right" width="102">
+    </div>
+
+    <!-- Tardigrade with first quest bubble -->
+    <div id="tardii-container">
+        <div id="speech-bubble">
+            <p>Oops! You already completed this quest!</p>
+        </div>
+        <img id="tardii" src="tardii.png" alt="tardigrade">
+    </div>
+
+    <!-- Monkey with second quest bubble -->
+    <div id="monkey-container">
+        <img id="monkey" src="monkey.png" alt="monkey">
+    </div>
+    <div id="penguin-container">
+        <div id="penguin-bubble">
+            <p>Oops! You already completed this quest!</p>
+        </div>
+        <img id="penguin" src="pen.png" alt="penguin">
+    </div>
+
+    <script>
+        const animal = localStorage.getItem('selectedAnimal');
+        const name = localStorage.getItem('selectedAnimalName');
+        const playerImg = document.getElementById('player-animal');
+
+        if (animal) {
+            playerImg.src = animal;
+            playerImg.alt = name;
+        }
+
+        let x = 62;
+        let y = 8;
+
+        // Click the arrow to go to key.html
+        document.getElementById('right-arrow').addEventListener('click', () => {
+            window.location.href = 'key.html';
+        });
+
+        function checkProximity() {
+            const playerRect = playerImg.getBoundingClientRect();
+            const pCX = playerRect.left + playerRect.width / 2;
+            const pCY = playerRect.top + playerRect.height / 2;
+
+            // Check if player has walked to/past the right edge (90% of screen width)
+            if (pCX >= window.innerWidth * 0.90) {
+                window.location.href = 'key.html';
+                return;
+            }
+
+            // Tardii bubble
+            const tardiiRect = document.getElementById('tardii').getBoundingClientRect();
+            const tCX = tardiiRect.left + tardiiRect.width / 2;
+            const tCY = tardiiRect.top + tardiiRect.height / 2;
+            const tardiiDist = Math.hypot(pCX - tCX, pCY - tCY);
+            document.getElementById('speech-bubble').style.display = tardiiDist < 200 ? 'block' : 'none';
+
+            // Monkey bubble
+            const monkeyRect = document.getElementById('monkey').getBoundingClientRect();
+            const mCX = monkeyRect.left + monkeyRect.width / 2;
+            const mCY = monkeyRect.top + monkeyRect.height / 2;
+            const monkeyDist = Math.hypot(pCX - mCX, pCY - mCY);
+            const monkeyBubble = document.getElementById('monkey-bubble');
+            if (monkeyBubble) monkeyBubble.style.display = monkeyDist < 200 ? 'block' : 'none';
+
+            // Turtle collision — push player back only if a turtle exists on this page
+            const turtle = document.getElementById('turtle');
+            let turtleDist = Infinity;
+            let tuCX = 0;
+            let tuCY = 0;
+
+            if (turtle) {
+                const turtleRect = turtle.getBoundingClientRect();
+                tuCX = turtleRect.left + turtleRect.width / 2;
+                tuCY = turtleRect.top + turtleRect.height / 2;
+                turtleDist = Math.hypot(pCX - tuCX, pCY - tuCY);
+            }
+
+            const penguinRect = document.getElementById('penguin').getBoundingClientRect();
+            const aCX = penguinRect.left + penguinRect.width / 2;
+            const aCY = penguinRect.top + penguinRect.height / 2;
+            const penguinDist = Math.hypot(pCX - aCX, pCY - aCY);
+            document.getElementById('penguin-bubble').style.display = penguinDist < 200 ? 'block' : 'none';
+
+            if (turtleDist < 100) {
+                if (pCX < tuCX) x -= 3; else x += 3;
+                if (pCY < tuCY) y += 3; else y -= 3;
+                playerImg.style.left = x + '%';
+                playerImg.style.bottom = y + '%';
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft')  x -= 1;
+            if (e.key === 'ArrowRight') x += 1;
+            if (e.key === 'ArrowUp')    y += 1;
+            if (e.key === 'ArrowDown')  y -= 1;
+
+            playerImg.style.left = x + '%';
+            playerImg.style.bottom = y + '%';
+
+            checkProximity();
+        });
+    </script>
+</body>
+</html>

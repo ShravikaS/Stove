@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="style.css">
+
+<img id="main-img" src="key.png" alt="key">
+
+<div id="lock-btn" style="
+  position: fixed;
+  top: 30%;
+  left: 30%;
+  width: 80%;
+  height: 18%;
+  cursor: pointer;
+  display: none;
+"></div>
+
+<div id="off-btn" style="
+  position: fixed;
+  top: 72%;
+  left: 7%;
+  width: 50%;
+  height: 14%;
+  cursor: pointer;
+  display: none;
+"></div>
+
+<div id="outside-btn" style="
+  position: fixed;
+  top: 75%;
+  left: 55%;
+  width: 40%;
+  height: 18%;
+  cursor: pointer;
+  display: none;
+"></div>
+
+<script>
+  setTimeout(() => {
+    document.getElementById('main-img').src = 'house.png';
+    document.getElementById('lock-btn').style.display = 'block';
+  }, 3000);
+
+  document.getElementById('lock-btn').addEventListener('click', () => {
+    document.getElementById('main-img').src = 'inside.png';
+    document.getElementById('lock-btn').style.display = 'none';
+    document.getElementById('off-btn').style.display = 'block';
+  });
+
+  document.getElementById('off-btn').addEventListener('click', () => {
+    document.getElementById('main-img').src = 'inside2.png';
+    document.getElementById('off-btn').style.display = 'none';
+    document.getElementById('outside-btn').style.display = 'block';
+  });
+
+  document.getElementById('outside-btn').addEventListener('click', () => {
+    document.getElementById('main-img').src = 'outside.png';
+    document.getElementById('outside-btn').style.display = 'none';
+  });
+</script>
