@@ -70,7 +70,7 @@
             const monkeyDist = Math.hypot(pCX - mCX, pCY - mCY);
             document.getElementById('monkey-bubble').style.display = monkeyDist < 200 ? 'block' : 'none';
 
-            // Turtle collision — push player back only if a turtle exists on this page
+            // Turtle collision push player back only if a turtle exists on this page
             const turtle = document.getElementById('turtle');
             let turtleDist = Infinity;
             let tuCX = 0;
@@ -111,5 +111,6 @@
             checkProximity();
         });
     </script>
+    <script src="music.js"></script>
 </body>
 </html>
